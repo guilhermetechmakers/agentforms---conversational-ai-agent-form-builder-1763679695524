@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121001909_create_user_profiles",
+  "created_at": "2025-11-21T00:19:09Z",
+  "description": "Create user profiles table to extend Supabase auth.users with additional profile information including name, company, OAuth providers, and SSO settings",
+  "tables_created": ["profiles"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users; DROP FUNCTION IF EXISTS public.handle_new_user(); DROP TABLE IF EXISTS profiles CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

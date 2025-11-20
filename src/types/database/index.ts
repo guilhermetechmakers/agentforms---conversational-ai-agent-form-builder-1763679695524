@@ -4,6 +4,7 @@
  */
 
 export * from './landing-page';
+export * from './profile';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -18,6 +19,11 @@ export interface Database {
         Row: import('./landing-page').LandingPageContent;
         Insert: import('./landing-page').LandingPageContentInsert;
         Update: import('./landing-page').LandingPageContentUpdate;
+      };
+      profiles: {
+        Row: import('./profile').Profile;
+        Insert: import('./profile').ProfileInsert;
+        Update: import('./profile').ProfileUpdate;
       };
     };
   };
