@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121001126_create_landing_page_tables",
+  "created_at": "2025-11-21T00:11:26Z",
+  "description": "Create tables for landing page user tracking and content management",
+  "tables_created": ["landing_page_tracking", "landing_page_content"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS landing_page_content CASCADE; DROP TABLE IF EXISTS landing_page_tracking CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}
