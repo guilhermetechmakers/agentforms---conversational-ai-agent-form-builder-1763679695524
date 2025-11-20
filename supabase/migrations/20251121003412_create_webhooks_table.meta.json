@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121003412_create_webhooks_table",
+  "created_at": "2025-11-21T00:34:12Z",
+  "description": "Create webhooks and webhook_deliveries tables to store webhook configurations and delivery logs",
+  "tables_created": ["webhooks", "webhook_deliveries"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS webhook_deliveries CASCADE; DROP TABLE IF EXISTS webhooks CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

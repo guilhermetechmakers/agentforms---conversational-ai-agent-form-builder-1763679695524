@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121003410_create_agents_table",
+  "created_at": "2025-11-21T00:34:10Z",
+  "description": "Create agents table to store agent configurations including schema, persona, knowledge, visuals, and publish settings",
+  "tables_created": ["agents"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS agents CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

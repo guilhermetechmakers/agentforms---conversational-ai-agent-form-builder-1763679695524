@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121003411_create_sessions_table",
+  "created_at": "2025-11-21T00:34:11Z",
+  "description": "Create sessions, messages, and extracted_fields tables to store session data, messages, and extracted field values from agent conversations",
+  "tables_created": ["sessions", "messages", "extracted_fields"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS extracted_fields CASCADE; DROP TABLE IF EXISTS messages CASCADE; DROP TABLE IF EXISTS sessions CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}
