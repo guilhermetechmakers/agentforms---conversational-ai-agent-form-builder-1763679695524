@@ -1,68 +1,158 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+/* Design System with CSS Custom Properties */
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    /* Primary Colors - Indigo */
+    --primary: 79 70 229; /* #4F46E5 - Indigo 600 */
+    --primary-foreground: 255 255 255;
+    --primary-variant: 99 102 241; /* #6366F1 - Indigo 500 */
+    
+    /* Neutral/Background */
+    --background: 248 250 252; /* #F8FAFC - page background */
+    --foreground: 15 23 42; /* #0F172A - text primary */
+    
+    /* Surface */
+    --card: 255 255 255; /* #FFFFFF - cards/panels */
+    --card-foreground: 15 23 42;
+    --surface: 241 245 249; /* #F1F5F9 - muted surfaces */
+    
+    /* Borders & Inputs */
+    --border: 230 233 242; /* #E6E9F2 */
+    --input: 230 233 242;
+    --ring: 79 70 229; /* Primary for focus rings */
+    
+    /* Semantic Colors */
+    --success: 16 185 129; /* #10B981 - green */
+    --warning: 245 158 11; /* #F59E0B - amber */
+    --danger: 239 68 68; /* #EF4444 - red */
+    
+    /* Text Colors */
+    --muted: 71 85 105; /* #475569 - text secondary */
+    --muted-foreground: 148 163 184; /* #94A3B8 - muted/disabled */
+    
+    /* Border Radius */
+    --radius: 0.5rem; /* 8px */
   }
-  a:hover {
-    color: #747bff;
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
-  button {
-    background-color: #f9f9f9;
+  
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-size: 16px;
+    line-height: 1.5;
   }
+  
+  /* Heading styles */
+  h1 {
+    @apply text-h1 font-bold;
+  }
+  
+  h2 {
+    @apply text-h2 font-semibold;
+  }
+  
+  h3 {
+    @apply text-h3 font-semibold;
+  }
+  
+  h4 {
+    @apply text-h4 font-semibold;
+  }
+}
+
+@layer components {
+  /* Button base styles */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-4 py-2.5 rounded-lg shadow-soft;
+    @apply transition-all duration-200 hover:bg-primary-variant hover:scale-[1.02];
+    @apply active:scale-[0.98];
+  }
+  
+  .btn-secondary {
+    @apply border border-border text-primary-variant px-4 py-2.5 rounded-lg;
+    @apply transition-all duration-200 hover:bg-surface hover:scale-[1.02];
+    @apply active:scale-[0.98];
+  }
+  
+  .btn-danger {
+    @apply bg-danger text-white px-4 py-2.5 rounded-lg shadow-soft;
+    @apply transition-all duration-200 hover:opacity-90 hover:scale-[1.02];
+    @apply active:scale-[0.98];
+  }
+  
+  /* Input base styles */
+  .input-base {
+    @apply h-11 border border-input rounded-lg px-3 text-input;
+    @apply placeholder:text-muted-foreground;
+    @apply focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    @apply transition-all duration-200;
+  }
+  
+  .input-error {
+    @apply border-danger focus:ring-danger;
+  }
+  
+  .input-success {
+    @apply border-success focus:ring-success;
+  }
+  
+  /* Card styles */
+  .card-base {
+    @apply bg-card rounded-xl p-6 shadow-card;
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+  
+  /* Modal overlay */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/40 z-50;
+  }
+  
+  /* Modal panel */
+  .modal-panel {
+    @apply fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2;
+    @apply bg-card rounded-xl shadow-lg max-w-[720px] w-full max-h-[90vh] overflow-auto;
+    @apply z-50;
+  }
+}
+
+/* Smooth Scrolling */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Focus Visible for Accessibility */
+:focus-visible {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--surface));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--muted));
 }
