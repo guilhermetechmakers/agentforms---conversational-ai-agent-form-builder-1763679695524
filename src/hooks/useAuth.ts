@@ -160,12 +160,48 @@ export function useSignInWithOAuth() {
  */
 export function useResendVerificationEmail() {
   return useMutation({
-    mutationFn: () => authApi.resendVerificationEmail(),
+    mutationFn: (email?: string) => authApi.resendVerificationEmail(email),
     onSuccess: () => {
       toast.success('Verification email sent! Please check your inbox.');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to send verification email.');
     },
+  });
+}
+
+/**
+ * Update user email mutation
+ */
+export function useUpdateUserEmail() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (newEmail: string) => authApi.updateUserEmail(newEmail),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.all });
+      toast.success('Email updated! A verification email has been sent to your new address.');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update email address.');
+    },
+  });
+}
+
+/**
+ * Check email verification status (with polling)
+ */
+export function useEmailVerificationStatus(enabled: boolean = true) {
+  return useQuery({
+    queryKey: [...authKeys.all, 'email-verification'],
+    queryFn: authApi.checkEmailVerification,
+    enabled,
+    refetchInterval: (query) => {
+      // Poll every 3 seconds if not verified, stop polling if verified
+      const data = query.state.data;
+      if (!data) return 3000; // Poll if no data yet
+      return data.verified ? false : 3000;
+    },
+    staleTime: 0, // Always check fresh
   });
 }

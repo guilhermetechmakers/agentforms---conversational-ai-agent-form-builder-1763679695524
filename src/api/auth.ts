@@ -194,3 +194,54 @@ export async function resendVerificationEmail(email?: string) {
     throw new Error(error.message);
   }
 }
+
+/**
+ * Update user email address
+ */
+export async function updateUserEmail(newEmail: string) {
+  const { data, error } = await supabase.auth.updateUser({
+    email: newEmail,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  // Resend verification email to new address
+  if (data.user) {
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: newEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/verify-email`,
+      },
+    });
+
+    if (resendError) {
+      console.error('Error sending verification email:', resendError);
+      // Don't throw here - email was updated successfully
+    }
+  }
+
+  return data.user;
+}
+
+/**
+ * Check if current user's email is verified
+ */
+export async function checkEmailVerification() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!user) {
+    return { verified: false, email: null };
+  }
+
+  return {
+    verified: user.email_confirmed_at !== null,
+    email: user.email,
+  };
+}
