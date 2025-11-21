@@ -10,6 +10,10 @@ export * from './session';
 export * from './webhook';
 export * from './team-member';
 export * from './subscription';
+export * from './plan';
+export * from './transaction';
+export * from './invoice';
+export * from './promo-code';
 export * from './security-settings';
 export * from './notification-preference';
 export * from './faq';
@@ -76,6 +80,26 @@ export interface Database {
         Row: import('./subscription').Subscription;
         Insert: import('./subscription').SubscriptionInsert;
         Update: import('./subscription').SubscriptionUpdate;
+      };
+      plans: {
+        Row: import('./plan').Plan;
+        Insert: import('./plan').PlanInsert;
+        Update: import('./plan').PlanUpdate;
+      };
+      transactions: {
+        Row: import('./transaction').Transaction;
+        Insert: import('./transaction').TransactionInsert;
+        Update: import('./transaction').TransactionUpdate;
+      };
+      invoices: {
+        Row: import('./invoice').Invoice;
+        Insert: import('./invoice').InvoiceInsert;
+        Update: import('./invoice').InvoiceUpdate;
+      };
+      promo_codes: {
+        Row: import('./promo-code').PromoCode;
+        Insert: import('./promo-code').PromoCodeInsert;
+        Update: import('./promo-code').PromoCodeUpdate;
       };
       security_settings: {
         Row: import('./security-settings').SecuritySettings;

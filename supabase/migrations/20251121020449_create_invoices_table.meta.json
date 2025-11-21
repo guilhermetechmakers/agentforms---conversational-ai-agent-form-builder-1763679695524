@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121020449_create_invoices_table",
+  "created_at": "2025-11-21T02:04:49Z",
+  "description": "Create invoices table for invoice records linked to transactions",
+  "tables_created": ["invoices"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS invoices CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}
