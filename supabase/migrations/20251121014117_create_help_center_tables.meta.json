@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121014117_create_help_center_tables",
+  "created_at": "2025-11-21T01:41:17Z",
+  "description": "Create tables for help center functionality: FAQs, support requests, and user interaction tracking",
+  "tables_created": ["faqs", "support_requests", "help_center_interactions"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS help_center_interactions CASCADE; DROP TABLE IF EXISTS support_requests CASCADE; DROP TABLE IF EXISTS faqs CASCADE; DROP FUNCTION IF EXISTS set_resolved_at() CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

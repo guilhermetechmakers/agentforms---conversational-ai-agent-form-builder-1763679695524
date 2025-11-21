@@ -12,6 +12,9 @@ export * from './team-member';
 export * from './subscription';
 export * from './security-settings';
 export * from './notification-preference';
+export * from './faq';
+export * from './support-request';
+export * from './help-center-interaction';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -81,6 +84,21 @@ export interface Database {
         Row: import('./notification-preference').NotificationPreference;
         Insert: import('./notification-preference').NotificationPreferenceInsert;
         Update: import('./notification-preference').NotificationPreferenceUpdate;
+      };
+      faqs: {
+        Row: import('./faq').FAQ;
+        Insert: import('./faq').FAQInsert;
+        Update: import('./faq').FAQUpdate;
+      };
+      support_requests: {
+        Row: import('./support-request').SupportRequest;
+        Insert: import('./support-request').SupportRequestInsert;
+        Update: import('./support-request').SupportRequestUpdate;
+      };
+      help_center_interactions: {
+        Row: import('./help-center-interaction').HelpCenterInteraction;
+        Insert: import('./help-center-interaction').HelpCenterInteractionInsert;
+        Update: never;
       };
     };
   };

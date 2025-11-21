@@ -75,6 +75,8 @@ export default {
         'bounce-in': 'bounceIn 0.6s ease-out',
         'blob': 'blob 7s infinite',
         'fade-out': 'fadeOut 0.2s ease-out',
+        'accordion-down': 'accordionDown 0.2s ease-out',
+        'accordion-up': 'accordionUp 0.2s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -116,6 +118,14 @@ export default {
         fadeOut: {
           '0%': { opacity: '1' },
           '100%': { opacity: '0' },
+        },
+        accordionDown: {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        accordionUp: {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
     },
