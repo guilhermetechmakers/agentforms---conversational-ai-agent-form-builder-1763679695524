@@ -26,6 +26,7 @@ export * from './agent-schema';
 export * from './schema-field';
 export * from './validation-rule';
 export * from './schema-draft';
+export * from './knowledge-snippet';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -165,6 +166,11 @@ export interface Database {
         Row: import('./schema-draft').SchemaDraft;
         Insert: import('./schema-draft').SchemaDraftInsert;
         Update: import('./schema-draft').SchemaDraftUpdate;
+      };
+      knowledge_snippets: {
+        Row: import('./knowledge-snippet').KnowledgeSnippet;
+        Insert: import('./knowledge-snippet').KnowledgeSnippetInsert;
+        Update: import('./knowledge-snippet').KnowledgeSnippetUpdate;
       };
     };
   };

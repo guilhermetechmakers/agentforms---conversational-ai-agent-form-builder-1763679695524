@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121023349_create_knowledge_snippets_table",
+  "created_at": "2025-11-21T02:33:49Z",
+  "description": "Create knowledge_snippets table for managing individual knowledge snippets with categories and tags",
+  "tables_created": ["knowledge_snippets"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS knowledge_snippets CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

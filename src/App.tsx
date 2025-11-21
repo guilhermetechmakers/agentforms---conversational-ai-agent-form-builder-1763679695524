@@ -22,6 +22,7 @@ import Terms from "@/pages/Terms";
 import NotFound from "@/pages/NotFound";
 import ServerError from "@/pages/ServerError";
 import Billing from "@/pages/Billing";
+import PersonaKnowledgeConfig from "@/pages/PersonaKnowledgeConfig";
 
 // React Query client with optimal defaults
 const queryClient = new QueryClient({
@@ -83,6 +84,14 @@ export default function App() {
             element={
               <ProtectedRoute requireEmailVerification>
                 <SchemaBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/:agentId/persona-knowledge"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <PersonaKnowledgeConfig />
               </ProtectedRoute>
             }
           />
