@@ -15,6 +15,7 @@ import {
   Bell,
   User,
   Webhook,
+  BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "Webhooks", href: "/webhooks", icon: Webhook },
   ];
