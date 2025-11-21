@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121025100_create_exports_table",
+  "created_at": "2025-11-21T02:51:00Z",
+  "description": "Create exports table to track export history for session data exports",
+  "tables_created": ["exports"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS exports CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

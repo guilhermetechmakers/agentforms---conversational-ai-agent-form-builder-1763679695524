@@ -23,6 +23,7 @@ import NotFound from "@/pages/NotFound";
 import ServerError from "@/pages/ServerError";
 import Billing from "@/pages/Billing";
 import PersonaKnowledgeConfig from "@/pages/PersonaKnowledgeConfig";
+import ExportHistory from "@/pages/ExportHistory";
 
 // React Query client with optimal defaults
 const queryClient = new QueryClient({
@@ -116,6 +117,14 @@ export default function App() {
             element={
               <ProtectedRoute requireEmailVerification>
                 <WebhookSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/exports"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <ExportHistory />
               </ProtectedRoute>
             }
           />

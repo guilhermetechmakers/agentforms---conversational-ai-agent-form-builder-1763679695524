@@ -12,6 +12,7 @@ import {
   bulkMarkSessionsReviewed,
   type GetSessionsFilters,
 } from '@/api/sessions';
+import { createExport, markExportCompleted, markExportFailed } from '@/api/exports';
 import type { SessionInsert, SessionUpdate } from '@/types/database/session';
 import { toast } from 'sonner';
 
@@ -94,20 +95,51 @@ export function useSessionMetrics(agentId?: string) {
  * Bulk export sessions as JSON
  */
 export function useBulkExportSessionsJSON() {
-  return useMutation({
-    mutationFn: (sessionIds: string[]) => bulkExportSessionsJSON(sessionIds),
-    onSuccess: (data, sessionIds) => {
-      // Download the JSON file
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sessions-export-${new Date().toISOString()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+  const queryClient = useQueryClient();
 
+  return useMutation({
+    mutationFn: async (sessionIds: string[]) => {
+      // Create export record
+      const exportRecord = await createExport({
+        format: 'json',
+        session_ids: sessionIds,
+        status: 'processing',
+        total_sessions: sessionIds.length,
+        filters: {},
+      });
+
+      try {
+        // Generate export data
+        const data = await bulkExportSessionsJSON(sessionIds);
+        
+        // Calculate file size
+        const blob = new Blob([data], { type: 'application/json' });
+        const fileSizeBytes = blob.size;
+
+        // Download the JSON file
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sessions-export-${new Date().toISOString()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Mark export as completed
+        await markExportCompleted(exportRecord.id, null, null, fileSizeBytes);
+
+        return { data, exportId: exportRecord.id };
+      } catch (error: any) {
+        // Mark export as failed
+        await markExportFailed(exportRecord.id, error.message || 'Export failed', {
+          sessionIds,
+        });
+        throw error;
+      }
+    },
+    onSuccess: (_result, sessionIds) => {
+      queryClient.invalidateQueries({ queryKey: ['exports'] });
       toast.success(`Exported ${sessionIds.length} session(s) as JSON`);
     },
     onError: (error) => {
@@ -120,20 +152,51 @@ export function useBulkExportSessionsJSON() {
  * Bulk export sessions as CSV
  */
 export function useBulkExportSessionsCSV() {
-  return useMutation({
-    mutationFn: (sessionIds: string[]) => bulkExportSessionsCSV(sessionIds),
-    onSuccess: (data, sessionIds) => {
-      // Download the CSV file
-      const blob = new Blob([data], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sessions-export-${new Date().toISOString()}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+  const queryClient = useQueryClient();
 
+  return useMutation({
+    mutationFn: async (sessionIds: string[]) => {
+      // Create export record
+      const exportRecord = await createExport({
+        format: 'csv',
+        session_ids: sessionIds,
+        status: 'processing',
+        total_sessions: sessionIds.length,
+        filters: {},
+      });
+
+      try {
+        // Generate export data
+        const data = await bulkExportSessionsCSV(sessionIds);
+        
+        // Calculate file size
+        const blob = new Blob([data], { type: 'text/csv' });
+        const fileSizeBytes = blob.size;
+
+        // Download the CSV file
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sessions-export-${new Date().toISOString()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Mark export as completed
+        await markExportCompleted(exportRecord.id, null, null, fileSizeBytes);
+
+        return { data, exportId: exportRecord.id };
+      } catch (error: any) {
+        // Mark export as failed
+        await markExportFailed(exportRecord.id, error.message || 'Export failed', {
+          sessionIds,
+        });
+        throw error;
+      }
+    },
+    onSuccess: (_result, sessionIds) => {
+      queryClient.invalidateQueries({ queryKey: ['exports'] });
       toast.success(`Exported ${sessionIds.length} session(s) as CSV`);
     },
     onError: (error) => {
