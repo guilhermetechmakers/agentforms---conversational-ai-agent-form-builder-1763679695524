@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121005733_add_session_notes_and_tags",
+  "created_at": "2025-11-21T00:57:33Z",
+  "description": "Add session notes table and tags/flagged columns to sessions table",
+  "tables_created": ["session_notes"],
+  "tables_modified": ["sessions"],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS session_notes CASCADE; ALTER TABLE sessions DROP COLUMN IF EXISTS tags, flagged, flag_reason; DROP INDEX IF EXISTS sessions_tags_idx, sessions_flagged_idx;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}
