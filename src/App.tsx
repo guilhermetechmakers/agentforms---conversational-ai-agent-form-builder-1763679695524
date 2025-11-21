@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { Toaster as RadixToaster } from "@/components/ui/toaster";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
 import EmailVerification from "@/pages/EmailVerification";
@@ -52,15 +53,78 @@ export default function App() {
           <Route path="/agent/:slug" element={<PublicAgentSession />} />
           
           {/* Protected routes */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/agent/new" element={<AgentBuilder />} />
-          <Route path="/agent/:id/edit" element={<AgentBuilder />} />
-          <Route path="/agent/:id/sessions" element={<AgentSessionsList />} />
-          <Route path="/session/:id" element={<SessionViewer />} />
-          <Route path="/webhooks" element={<WebhookSettings />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/billing" element={<Billing />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/new"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <AgentBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/:id/edit"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <AgentBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/:id/sessions"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <AgentSessionsList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/session/:id"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <SessionViewer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/webhooks"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <WebhookSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <Billing />
+              </ProtectedRoute>
+            }
+          />
           
           {/* Error pages */}
           <Route path="/error" element={<ServerError />} />

@@ -21,6 +21,7 @@ export * from './support-request';
 export * from './help-center-interaction';
 export * from './error-log';
 export * from './support-ticket';
+export * from './sso-configuration';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -135,6 +136,11 @@ export interface Database {
         Row: import('./support-ticket').SupportTicket;
         Insert: import('./support-ticket').SupportTicketInsert;
         Update: import('./support-ticket').SupportTicketUpdate;
+      };
+      sso_configurations: {
+        Row: import('./sso-configuration').SSOConfiguration;
+        Insert: import('./sso-configuration').SSOConfigurationInsert;
+        Update: import('./sso-configuration').SSOConfigurationUpdate;
       };
     };
   };
