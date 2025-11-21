@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121012225_create_security_settings_table",
+  "created_at": "2025-11-21T01:22:25Z",
+  "description": "Create security_settings table for storing user security configurations (2FA, SSO, etc.)",
+  "tables_created": ["security_settings"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS security_settings CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

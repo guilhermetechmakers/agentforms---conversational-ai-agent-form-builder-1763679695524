@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121012224_create_subscriptions_table",
+  "created_at": "2025-11-21T01:22:24Z",
+  "description": "Create subscriptions table for managing user subscriptions and billing information",
+  "tables_created": ["subscriptions"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS subscriptions CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

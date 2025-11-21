@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121012223_create_team_members_table",
+  "created_at": "2025-11-21T01:22:23Z",
+  "description": "Create team_members table for managing team member relationships and roles",
+  "tables_created": ["team_members"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS team_members CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}
