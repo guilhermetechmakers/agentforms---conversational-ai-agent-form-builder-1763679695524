@@ -3,6 +3,8 @@ import type { PlanRow } from '@/types/database/plan';
 import type { TransactionRow, TransactionInsert } from '@/types/database/transaction';
 import type { InvoiceRow } from '@/types/database/invoice';
 import type { PromoCodeRow, PromoCodeValidation } from '@/types/database/promo-code';
+import type { PaymentMethodRow, PaymentMethodInsert, PaymentMethodUpdate } from '@/types/database/payment-method';
+import type { SubscriptionRow, SubscriptionUpdate } from '@/types/database/subscription';
 
 /**
  * Fetch all active plans
@@ -353,4 +355,217 @@ export async function confirmPayment(_data: {
   // This would typically call a backend API endpoint
   // For now, we'll throw an error indicating backend implementation needed
   throw new Error('Payment confirmation requires backend API implementation');
+}
+
+// =====================================================
+// Payment Methods API
+// =====================================================
+
+/**
+ * Fetch all payment methods for the current user
+ */
+export async function getPaymentMethods(): Promise<PaymentMethodRow[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase
+    .from('payment_methods')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch payment methods: ${error.message}`);
+  }
+
+  return data || [];
+}
+
+/**
+ * Fetch a single payment method by ID
+ */
+export async function getPaymentMethod(id: string): Promise<PaymentMethodRow | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase
+    .from('payment_methods')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null; // Not found
+    }
+    throw new Error(`Failed to fetch payment method: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Create a new payment method
+ * Note: This should typically be called after creating a payment method in Stripe
+ */
+export async function createPaymentMethod(
+  paymentMethod: Omit<PaymentMethodInsert, 'user_id'>
+): Promise<PaymentMethodRow> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const paymentMethodsTable = supabase.from('payment_methods') as any;
+  const { data, error } = await paymentMethodsTable
+    .insert({
+      ...paymentMethod,
+      user_id: user.id,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create payment method: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Update a payment method
+ */
+export async function updatePaymentMethod(
+  id: string,
+  updates: PaymentMethodUpdate
+): Promise<PaymentMethodRow> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const paymentMethodsTable = supabase.from('payment_methods') as any;
+  const { data, error } = await paymentMethodsTable
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update payment method: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Delete (deactivate) a payment method
+ */
+export async function deletePaymentMethod(id: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Soft delete by setting is_active to false
+  const paymentMethodsTable = supabase.from('payment_methods') as any;
+  const { error } = await paymentMethodsTable
+    .update({ is_active: false })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    throw new Error(`Failed to delete payment method: ${error.message}`);
+  }
+}
+
+/**
+ * Set a payment method as default
+ */
+export async function setDefaultPaymentMethod(id: string): Promise<PaymentMethodRow> {
+  return updatePaymentMethod(id, { is_default: true });
+}
+
+// =====================================================
+// Subscriptions API
+// =====================================================
+
+/**
+ * Fetch the current user's subscription
+ */
+export async function getSubscription(): Promise<SubscriptionRow | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null; // No subscription found
+    }
+    throw new Error(`Failed to fetch subscription: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Update subscription
+ * Note: This should typically be called from the backend after Stripe webhook events
+ */
+export async function updateSubscription(
+  updates: SubscriptionUpdate
+): Promise<SubscriptionRow> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const subscriptionsTable = supabase.from('subscriptions') as any;
+  const { data, error } = await subscriptionsTable
+    .update(updates)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update subscription: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Cancel subscription (set to cancel at period end)
+ */
+export async function cancelSubscription(): Promise<SubscriptionRow> {
+  return updateSubscription({ cancel_at_period_end: true });
+}
+
+/**
+ * Reactivate subscription
+ */
+export async function reactivateSubscription(): Promise<SubscriptionRow> {
+  return updateSubscription({ cancel_at_period_end: false });
 }

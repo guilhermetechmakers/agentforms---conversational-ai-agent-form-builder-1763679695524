@@ -28,6 +28,7 @@ export * from './validation-rule';
 export * from './schema-draft';
 export * from './knowledge-snippet';
 export * from './audit-log';
+export * from './payment-method';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -177,6 +178,11 @@ export interface Database {
         Row: import('./audit-log').AuditLog;
         Insert: import('./audit-log').AuditLogInsert;
         Update: import('./audit-log').AuditLogUpdate;
+      };
+      payment_methods: {
+        Row: import('./payment-method').PaymentMethod;
+        Insert: import('./payment-method').PaymentMethodInsert;
+        Update: import('./payment-method').PaymentMethodUpdate;
       };
     };
   };

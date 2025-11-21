@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -31,13 +32,19 @@ import {
   Sparkles,
   ArrowRight,
   Loader2,
+  Plus,
 } from "lucide-react";
 import {
   usePlans,
   useTransactions,
   useInvoices,
   useValidatePromoCode,
+  usePaymentMethods,
 } from "@/hooks/useBilling";
+import { PaymentMethodCard } from "@/components/billing/PaymentMethodCard";
+import { AddPaymentMethodModal } from "@/components/billing/AddPaymentMethodModal";
+import { SubscriptionManagement } from "@/components/billing/SubscriptionManagement";
+import { InvoiceViewer } from "@/components/billing/InvoiceViewer";
 import { cn } from "@/lib/utils";
 import type { PlanRow } from "@/types/database/plan";
 
@@ -298,6 +305,7 @@ function CheckoutForm({
 
 export default function Billing() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<"plans" | "subscription" | "payment-methods" | "invoices">("plans");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [promoCode, setPromoCode] = useState("");
@@ -305,11 +313,14 @@ export default function Billing() {
   const [discountAmount, setDiscountAmount] = useState<number | undefined>();
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { data: plans, isLoading: plansLoading } = usePlans();
   const { data: transactions } = useTransactions({ limit: 10 });
   const { data: invoices } = useInvoices({ limit: 10 });
+  const { data: paymentMethods } = usePaymentMethods();
   const validatePromoCode = useValidatePromoCode();
 
   const selectedPlan = plans?.find((p) => p.id === selectedPlanId) || null;
@@ -354,14 +365,19 @@ export default function Billing() {
     currency: "usd",
   };
 
+  const handleViewInvoice = (invoiceId: string) => {
+    setSelectedInvoiceId(invoiceId);
+    setShowInvoiceDialog(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-h1 mb-2">Billing & Checkout</h1>
+          <h1 className="text-h1 mb-2">Billing & Subscriptions</h1>
           <p className="text-muted-foreground">
-            Choose a plan and complete your subscription
+            Manage your subscription, payment methods, and invoices
           </p>
         </div>
 
@@ -373,7 +389,17 @@ export default function Billing() {
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="plans">Plans</TabsTrigger>
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
+            <TabsTrigger value="payment-methods">Payment Methods</TabsTrigger>
+            <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          </TabsList>
+
+          {/* Plans Tab */}
+          <TabsContent value="plans" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Plan Selection */}
           <div className="lg:col-span-2 space-y-6">
             {/* Billing Cycle Toggle */}
@@ -553,23 +579,73 @@ export default function Billing() {
             )}
           </div>
 
-          {/* Sidebar - Invoice History */}
-          <div className="space-y-6">
+            </div>
+          </TabsContent>
+
+          {/* Subscription Tab */}
+          <TabsContent value="subscription" className="space-y-6">
+            <SubscriptionManagement />
+          </TabsContent>
+
+          {/* Payment Methods Tab */}
+          <TabsContent value="payment-methods" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Payment Methods</CardTitle>
+                    <CardDescription>
+                      Manage your saved payment methods
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setShowAddPaymentMethod(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Payment Method
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {paymentMethods && paymentMethods.length > 0 ? (
+                  <div className="space-y-4">
+                    {paymentMethods.map((pm) => (
+                      <PaymentMethodCard key={pm.id} paymentMethod={pm} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <CreditCard className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">No payment methods</p>
+                    <p className="text-sm mb-4">Add a payment method to get started</p>
+                    <Button onClick={() => setShowAddPaymentMethod(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Payment Method
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Invoices Tab */}
+          <TabsContent value="invoices" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
                   Invoice History
                 </CardTitle>
+                <CardDescription>
+                  View and download your invoices
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {invoices && invoices.length > 0 ? (
                   <div className="space-y-3">
-                    {invoices.slice(0, 5).map((invoice) => (
+                    {invoices.map((invoice) => (
                       <div
                         key={invoice.id}
-                        className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-surface transition-colors cursor-pointer"
-                        onClick={() => setShowInvoiceDialog(true)}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-surface transition-colors cursor-pointer"
+                        onClick={() => handleViewInvoice(invoice.id)}
                       >
                         <div>
                           <p className="text-sm font-medium">{invoice.invoice_number}</p>
@@ -577,35 +653,34 @@ export default function Billing() {
                             {new Date(invoice.invoice_date).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold">${invoice.amount.toFixed(2)}</p>
-                          <Badge
-                            variant={
-                              invoice.status === "paid"
-                                ? "default"
-                                : invoice.status === "overdue"
-                                ? "destructive"
-                                : "outline"
-                            }
-                            className="text-xs"
-                          >
-                            {invoice.status}
-                          </Badge>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-semibold">${invoice.amount.toFixed(2)}</p>
+                            <Badge
+                              variant={
+                                invoice.status === "paid"
+                                  ? "default"
+                                  : invoice.status === "overdue"
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                              className="text-xs"
+                            >
+                              {invoice.status}
+                            </Badge>
+                          </div>
+                          <Button variant="ghost" size="icon">
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     ))}
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setShowInvoiceDialog(true)}
-                    >
-                      View All Invoices
-                    </Button>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No invoices yet</p>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">No invoices yet</p>
+                    <p className="text-sm">Your invoices will appear here</p>
                   </div>
                 )}
               </CardContent>
@@ -614,7 +689,7 @@ export default function Billing() {
             {/* Recent Transactions */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
                   Recent Transactions
                 </CardTitle>
@@ -622,10 +697,10 @@ export default function Billing() {
               <CardContent>
                 {transactions && transactions.length > 0 ? (
                   <div className="space-y-3">
-                    {transactions.slice(0, 5).map((transaction) => (
+                    {transactions.map((transaction) => (
                       <div
                         key={transaction.id}
-                        className="flex items-center justify-between p-3 rounded-lg border border-border"
+                        className="flex items-center justify-between p-4 rounded-lg border border-border"
                       >
                         <div>
                           <p className="text-sm font-medium">
@@ -658,8 +733,8 @@ export default function Billing() {
                 )}
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Success Dialog */}
         <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
@@ -694,62 +769,26 @@ export default function Billing() {
           </DialogContent>
         </Dialog>
 
-        {/* Invoice Dialog */}
-        <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
-          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Invoice History</DialogTitle>
-              <DialogDescription>
-                View and download your past invoices
-              </DialogDescription>
-            </DialogHeader>
-            <div className="mt-4 space-y-4">
-              {invoices && invoices.length > 0 ? (
-                invoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border"
-                  >
-                    <div>
-                      <p className="font-medium">{invoice.invoice_number}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(invoice.invoice_date).toLocaleDateString()} • $
-                        {invoice.amount.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          invoice.status === "paid"
-                            ? "default"
-                            : invoice.status === "overdue"
-                            ? "destructive"
-                            : "outline"
-                        }
-                      >
-                        {invoice.status}
-                      </Badge>
-                      {invoice.stripe_invoice_pdf_url && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(invoice.stripe_invoice_pdf_url!, "_blank")}
-                        >
-                          Download
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No invoices found</p>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Add Payment Method Modal */}
+        <AddPaymentMethodModal
+          open={showAddPaymentMethod}
+          onOpenChange={setShowAddPaymentMethod}
+          onSuccess={() => {
+            // Payment method list will refresh automatically via React Query
+          }}
+        />
+
+        {/* Invoice Viewer */}
+        <InvoiceViewer
+          invoiceId={selectedInvoiceId}
+          open={showInvoiceDialog}
+          onOpenChange={(open) => {
+            setShowInvoiceDialog(open);
+            if (!open) {
+              setSelectedInvoiceId(null);
+            }
+          }}
+        />
       </div>
     </DashboardLayout>
   );

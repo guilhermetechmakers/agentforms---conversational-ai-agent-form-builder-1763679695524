@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121031653_create_payment_methods_table",
+  "created_at": "2025-11-21T03:16:53Z",
+  "description": "Create payment_methods table to store user payment methods securely via Stripe integration",
+  "tables_created": ["payment_methods"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS payment_methods CASCADE; DROP FUNCTION IF EXISTS ensure_single_default_payment_method() CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

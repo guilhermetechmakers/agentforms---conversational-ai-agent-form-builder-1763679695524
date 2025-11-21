@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import * as billingApi from '@/api/billing';
 import type { TransactionInsert } from '@/types/database/transaction';
+import type { PaymentMethodInsert, PaymentMethodUpdate } from '@/types/database/payment-method';
+import type { SubscriptionUpdate } from '@/types/database/subscription';
 
 const QUERY_KEYS = {
   all: ['billing'] as const,
@@ -13,6 +15,9 @@ const QUERY_KEYS = {
   invoices: () => [...QUERY_KEYS.all, 'invoices'] as const,
   invoice: (id: string) => [...QUERY_KEYS.invoices(), id] as const,
   invoiceByTransaction: (transactionId: string) => [...QUERY_KEYS.invoices(), 'transaction', transactionId] as const,
+  paymentMethods: () => [...QUERY_KEYS.all, 'payment-methods'] as const,
+  paymentMethod: (id: string) => [...QUERY_KEYS.paymentMethods(), id] as const,
+  subscription: () => [...QUERY_KEYS.all, 'subscription'] as const,
 };
 
 /**
@@ -178,10 +183,182 @@ export function useConfirmPayment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.transactions() });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.invoices() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subscription() });
       toast.success('Payment confirmed successfully');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to confirm payment');
+    },
+  });
+}
+
+// =====================================================
+// Payment Methods Hooks
+// =====================================================
+
+/**
+ * Hook to fetch all payment methods for the current user
+ */
+export function usePaymentMethods() {
+  return useQuery({
+    queryKey: QUERY_KEYS.paymentMethods(),
+    queryFn: () => billingApi.getPaymentMethods(),
+    staleTime: 30000, // 30 seconds
+  });
+}
+
+/**
+ * Hook to fetch a single payment method by ID
+ */
+export function usePaymentMethod(id: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.paymentMethod(id),
+    queryFn: () => billingApi.getPaymentMethod(id),
+    enabled: !!id,
+    staleTime: 30000,
+  });
+}
+
+/**
+ * Hook to create a new payment method
+ */
+export function useCreatePaymentMethod() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (paymentMethod: Omit<PaymentMethodInsert, 'user_id'>) =>
+      billingApi.createPaymentMethod(paymentMethod),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentMethods() });
+      toast.success('Payment method added successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to add payment method: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to update a payment method
+ */
+export function useUpdatePaymentMethod() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: PaymentMethodUpdate }) =>
+      billingApi.updatePaymentMethod(id, updates),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentMethods() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentMethod(variables.id) });
+      toast.success('Payment method updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update payment method: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to delete a payment method
+ */
+export function useDeletePaymentMethod() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => billingApi.deletePaymentMethod(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentMethods() });
+      toast.success('Payment method removed successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to remove payment method: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to set a payment method as default
+ */
+export function useSetDefaultPaymentMethod() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => billingApi.setDefaultPaymentMethod(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.paymentMethods() });
+      toast.success('Default payment method updated');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to set default payment method: ${error.message}`);
+    },
+  });
+}
+
+// =====================================================
+// Subscriptions Hooks
+// =====================================================
+
+/**
+ * Hook to fetch the current user's subscription
+ */
+export function useSubscription() {
+  return useQuery({
+    queryKey: QUERY_KEYS.subscription(),
+    queryFn: () => billingApi.getSubscription(),
+    staleTime: 30000, // 30 seconds
+  });
+}
+
+/**
+ * Hook to update subscription
+ */
+export function useUpdateSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (updates: SubscriptionUpdate) => billingApi.updateSubscription(updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subscription() });
+      toast.success('Subscription updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update subscription: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to cancel subscription
+ */
+export function useCancelSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => billingApi.cancelSubscription(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subscription() });
+      toast.success('Subscription will be canceled at the end of the billing period');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to cancel subscription: ${error.message}`);
+    },
+  });
+}
+
+/**
+ * Hook to reactivate subscription
+ */
+export function useReactivateSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => billingApi.reactivateSubscription(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.subscription() });
+      toast.success('Subscription reactivated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to reactivate subscription: ${error.message}`);
     },
   });
 }

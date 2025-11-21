@@ -44,6 +44,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import {
   useProfile,
@@ -61,6 +62,7 @@ import {
 } from "@/hooks/useSettings";
 import { useUser } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 // Form schemas
 const profileSchema = z.object({
@@ -87,6 +89,7 @@ type InviteTeamMemberFormData = z.infer<typeof inviteTeamMemberSchema>;
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function Settings() {
+  const navigate = useNavigate();
   const { data: user } = useUser();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: teamMembers, isLoading: teamLoading } = useTeamMembers();
@@ -433,10 +436,18 @@ export default function Settings() {
           <TabsContent value="billing" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Billing & Subscription</CardTitle>
-                <CardDescription>
-                  Manage your subscription and billing information
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Billing & Subscription</CardTitle>
+                    <CardDescription>
+                      Manage your subscription and billing information
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => navigate("/billing")} variant="outline">
+                    <SettingsIcon className="mr-2 h-4 w-4" />
+                    Manage Billing
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {subscriptionLoading ? (
@@ -468,7 +479,7 @@ export default function Settings() {
                     )}
 
                     <div className="flex gap-4">
-                      <Button variant="outline" onClick={() => window.location.href = "/billing"}>
+                      <Button variant="outline" onClick={() => navigate("/billing")}>
                         Change Plan
                       </Button>
                       {subscription.status === "active" && (
