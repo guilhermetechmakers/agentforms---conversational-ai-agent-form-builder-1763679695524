@@ -15,6 +15,8 @@ export * from './notification-preference';
 export * from './faq';
 export * from './support-request';
 export * from './help-center-interaction';
+export * from './error-log';
+export * from './support-ticket';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -99,6 +101,16 @@ export interface Database {
         Row: import('./help-center-interaction').HelpCenterInteraction;
         Insert: import('./help-center-interaction').HelpCenterInteractionInsert;
         Update: never;
+      };
+      error_logs: {
+        Row: import('./error-log').ErrorLog;
+        Insert: import('./error-log').ErrorLogInsert;
+        Update: import('./error-log').ErrorLogUpdate;
+      };
+      support_tickets: {
+        Row: import('./support-ticket').SupportTicket;
+        Insert: import('./support-ticket').SupportTicketInsert;
+        Update: import('./support-ticket').SupportTicketUpdate;
       };
     };
   };

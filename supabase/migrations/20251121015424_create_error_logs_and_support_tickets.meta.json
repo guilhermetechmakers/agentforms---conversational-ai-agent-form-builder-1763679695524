@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121015424_create_error_logs_and_support_tickets",
+  "created_at": "2025-11-21T01:54:24Z",
+  "description": "Create error_logs and support_tickets tables for error tracking and support ticket management",
+  "tables_created": ["error_logs", "support_tickets"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS support_tickets CASCADE; DROP TABLE IF EXISTS error_logs CASCADE; DROP FUNCTION IF EXISTS set_support_ticket_resolved_at() CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

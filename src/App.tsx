@@ -18,6 +18,7 @@ import Help from "@/pages/Help";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import NotFound from "@/pages/NotFound";
+import ServerError from "@/pages/ServerError";
 import Billing from "@/pages/Billing";
 
 // React Query client with optimal defaults
@@ -60,6 +61,10 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/billing" element={<Billing />} />
+          
+          {/* Error pages */}
+          <Route path="/error" element={<ServerError />} />
+          <Route path="/500" element={<ServerError />} />
           
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
