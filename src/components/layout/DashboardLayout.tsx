@@ -14,6 +14,7 @@ import {
   Search,
   Bell,
   User,
+  Webhook,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,6 +37,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Webhooks", href: "/webhooks", icon: Webhook },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -30,7 +30,7 @@ export interface Webhook {
 export interface WebhookInsert {
   id?: string;
   agent_id: string;
-  user_id: string;
+  user_id?: string; // Added automatically by API
   name: string;
   url: string;
   secret?: string | null;
