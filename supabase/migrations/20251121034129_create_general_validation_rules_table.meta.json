@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121034129_create_general_validation_rules_table",
+  "created_at": "2025-11-21T03:41:29Z",
+  "description": "Create general validation rules table for form and component validation (separate from schema field validation)",
+  "tables_created": ["general_validation_rules"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS general_validation_rules CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

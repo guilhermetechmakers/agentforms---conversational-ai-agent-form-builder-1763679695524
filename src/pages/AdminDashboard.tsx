@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KPICard } from '@/components/admin/KPICard';
 import { UserManagementTable } from '@/components/admin/UserManagementTable';
 import { SystemHealth } from '@/components/admin/SystemHealth';
+import { ErrorLogViewer } from '@/components/admin/ErrorLogViewer';
+import { ValidationRuleEditor } from '@/components/admin/ValidationRuleEditor';
+import { MonitoringDashboard } from '@/components/admin/MonitoringDashboard';
 import {
   useAdminKPIs,
   useSessionsOverTime,
@@ -18,6 +21,8 @@ import {
   Webhook,
   BarChart3,
   Activity,
+  AlertTriangle,
+  Settings,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -116,6 +121,18 @@ export default function AdminDashboard() {
             <TabsTrigger value="health">
               <Activity className="mr-2 h-4 w-4" />
               System Health
+            </TabsTrigger>
+            <TabsTrigger value="monitoring">
+              <Activity className="mr-2 h-4 w-4" />
+              Monitoring
+            </TabsTrigger>
+            <TabsTrigger value="errors">
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Error Logs
+            </TabsTrigger>
+            <TabsTrigger value="validation">
+              <Settings className="mr-2 h-4 w-4" />
+              Validation Rules
             </TabsTrigger>
           </TabsList>
 
@@ -326,6 +343,21 @@ export default function AdminDashboard() {
           {/* System Health Tab */}
           <TabsContent value="health">
             <SystemHealth />
+          </TabsContent>
+
+          {/* Monitoring Tab */}
+          <TabsContent value="monitoring">
+            <MonitoringDashboard />
+          </TabsContent>
+
+          {/* Error Logs Tab */}
+          <TabsContent value="errors">
+            <ErrorLogViewer />
+          </TabsContent>
+
+          {/* Validation Rules Tab */}
+          <TabsContent value="validation">
+            <ValidationRuleEditor />
           </TabsContent>
         </Tabs>
       </div>

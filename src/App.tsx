@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { Toaster as RadixToaster } from "@/components/ui/toaster";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import Home from "@/pages/Home";
 import Auth from "@/pages/Auth";
 import EmailVerification from "@/pages/EmailVerification";
@@ -42,9 +43,10 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
           {/* Public routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Auth />} />
@@ -191,5 +193,6 @@ export default function App() {
       <Toaster position="top-right" />
       <RadixToaster />
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

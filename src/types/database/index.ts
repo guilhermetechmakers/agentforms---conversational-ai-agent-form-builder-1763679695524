@@ -25,6 +25,7 @@ export * from './sso-configuration';
 export * from './agent-schema';
 export * from './schema-field';
 export * from './validation-rule';
+export * from './general-validation-rule';
 export * from './schema-draft';
 export * from './knowledge-snippet';
 export * from './audit-log';
@@ -166,6 +167,11 @@ export interface Database {
         Row: import('./validation-rule').ValidationRule;
         Insert: import('./validation-rule').ValidationRuleInsert;
         Update: import('./validation-rule').ValidationRuleUpdate;
+      };
+      general_validation_rules: {
+        Row: import('./general-validation-rule').GeneralValidationRule;
+        Insert: import('./general-validation-rule').GeneralValidationRuleInsert;
+        Update: import('./general-validation-rule').GeneralValidationRuleUpdate;
       };
       schema_drafts: {
         Row: import('./schema-draft').SchemaDraft;
