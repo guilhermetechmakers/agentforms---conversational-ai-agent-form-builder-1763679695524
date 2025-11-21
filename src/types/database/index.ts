@@ -29,6 +29,9 @@ export * from './schema-draft';
 export * from './knowledge-snippet';
 export * from './audit-log';
 export * from './payment-method';
+export * from './retention-policy';
+export * from './access-control';
+export * from './dsr-request';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -183,6 +186,21 @@ export interface Database {
         Row: import('./payment-method').PaymentMethod;
         Insert: import('./payment-method').PaymentMethodInsert;
         Update: import('./payment-method').PaymentMethodUpdate;
+      };
+      retention_policies: {
+        Row: import('./retention-policy').RetentionPolicy;
+        Insert: import('./retention-policy').RetentionPolicyInsert;
+        Update: import('./retention-policy').RetentionPolicyUpdate;
+      };
+      access_controls: {
+        Row: import('./access-control').AccessControl;
+        Insert: import('./access-control').AccessControlInsert;
+        Update: import('./access-control').AccessControlUpdate;
+      };
+      dsr_requests: {
+        Row: import('./dsr-request').DSRRequest;
+        Insert: import('./dsr-request').DSRRequestInsert;
+        Update: import('./dsr-request').DSRRequestUpdate;
       };
     };
   };

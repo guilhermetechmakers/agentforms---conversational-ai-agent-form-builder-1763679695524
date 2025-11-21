@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121032735_create_access_controls_table",
+  "created_at": "2025-11-21T03:27:35Z",
+  "description": "Create access_controls table for managing permissions on sessions, exports, and sensitive operations",
+  "tables_created": ["access_controls"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS access_controls CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121032737_extend_audit_logs_for_security",
+  "created_at": "2025-11-21T03:27:37Z",
+  "description": "Extend audit_logs table to support security and privacy-related action types and entity types",
+  "tables_created": [],
+  "tables_modified": ["audit_logs"],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "See migration file for rollback instructions",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

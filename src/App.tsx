@@ -26,6 +26,7 @@ import PersonaKnowledgeConfig from "@/pages/PersonaKnowledgeConfig";
 import ExportHistory from "@/pages/ExportHistory";
 import Analytics from "@/pages/Analytics";
 import TeamManagement from "@/pages/TeamManagement";
+import SecurityPrivacySettings from "@/pages/SecurityPrivacySettings";
 
 // React Query client with optimal defaults
 const queryClient = new QueryClient({
@@ -167,6 +168,14 @@ export default function App() {
             element={
               <ProtectedRoute requireEmailVerification>
                 <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/security-privacy"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <SecurityPrivacySettings />
               </ProtectedRoute>
             }
           />

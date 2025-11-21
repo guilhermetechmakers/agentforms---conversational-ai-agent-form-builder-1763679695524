@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121032736_create_dsr_requests_table",
+  "created_at": "2025-11-21T03:27:36Z",
+  "description": "Create dsr_requests table for handling Data Subject Requests (GDPR/CCPA) for data export and deletion",
+  "tables_created": ["dsr_requests"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS dsr_requests CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}
