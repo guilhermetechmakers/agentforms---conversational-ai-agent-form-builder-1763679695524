@@ -6,6 +6,7 @@ import type { TeamMemberUpdate } from '@/types/database/team-member';
 import type { SubscriptionUpdate } from '@/types/database/subscription';
 import type { SecuritySettingsUpdate } from '@/types/database/security-settings';
 import type { NotificationPreferenceUpdate, NotificationAlertType } from '@/types/database/notification-preference';
+import type { AuditLog } from '@/types/database/audit-log';
 
 // Query keys
 export const settingsKeys = {
@@ -15,6 +16,7 @@ export const settingsKeys = {
   subscription: () => [...settingsKeys.all, 'subscription'] as const,
   security: () => [...settingsKeys.all, 'security'] as const,
   notifications: () => [...settingsKeys.all, 'notifications'] as const,
+  auditLogs: () => [...settingsKeys.all, 'audit-logs'] as const,
 };
 
 /**
@@ -81,6 +83,7 @@ export function useInviteTeamMember() {
       settingsApi.inviteTeamMember(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.team() });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.auditLogs() });
       toast.success('Team member invitation sent');
     },
     onError: (error: Error) => {
@@ -100,6 +103,7 @@ export function useUpdateTeamMember() {
       settingsApi.updateTeamMember(memberId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.team() });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.auditLogs() });
       toast.success('Team member updated successfully');
     },
     onError: (error: Error) => {
@@ -118,6 +122,7 @@ export function useRemoveTeamMember() {
     mutationFn: (memberId: string) => settingsApi.removeTeamMember(memberId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.team() });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.auditLogs() });
       toast.success('Team member removed successfully');
     },
     onError: (error: Error) => {
@@ -153,11 +158,46 @@ export function useUpdateSubscription() {
     mutationFn: (updates: SubscriptionUpdate) => settingsApi.updateSubscription(updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.subscription() });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.auditLogs() });
       toast.success('Subscription updated successfully');
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update subscription');
     },
+  });
+}
+
+/**
+ * Update seat count mutation
+ */
+export function useUpdateSeats() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (seatCount: number) => settingsApi.updateSeats(seatCount),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.subscription() });
+      queryClient.invalidateQueries({ queryKey: settingsKeys.auditLogs() });
+      toast.success('Seat count updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update seat count');
+    },
+  });
+}
+
+/**
+ * Get audit logs
+ */
+export function useAuditLogs(filters?: {
+  action_type?: string;
+  entity_type?: string;
+  limit?: number;
+}) {
+  return useQuery<AuditLog[]>({
+    queryKey: [...settingsKeys.auditLogs(), filters],
+    queryFn: () => settingsApi.getAuditLogs(filters),
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 

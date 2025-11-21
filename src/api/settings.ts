@@ -4,6 +4,7 @@ import type { TeamMember, TeamMemberInsert, TeamMemberUpdate } from '@/types/dat
 import type { Subscription, SubscriptionUpdate } from '@/types/database/subscription';
 import type { SecuritySettings, SecuritySettingsInsert, SecuritySettingsUpdate } from '@/types/database/security-settings';
 import type { NotificationPreference, NotificationPreferenceInsert, NotificationPreferenceUpdate, NotificationAlertType } from '@/types/database/notification-preference';
+import type { AuditLog, AuditLogInsert } from '@/types/database/audit-log';
 
 /**
  * ============================================
@@ -123,13 +124,55 @@ export async function inviteTeamMember(input: { email: string; role: 'admin' | '
     throw new Error(error.message);
   }
 
-  return data as TeamMember;
+  const newMember = data as TeamMember;
+
+  // Create audit log
+  try {
+    await createAuditLog({
+      organization_id: user.id,
+      user_id: user.id,
+      action_type: 'team_member_invited',
+      entity_type: 'team_member',
+      entity_id: newMember.id,
+      old_value: null,
+      new_value: { email: input.email, role: input.role },
+      metadata: {
+        email: input.email,
+        role: input.role,
+        invite_token: inviteToken,
+      },
+    });
+  } catch (auditError) {
+    // Log error but don't fail the operation
+    console.error('Failed to create audit log:', auditError);
+  }
+
+  return newMember;
 }
 
 /**
  * Update team member role
  */
 export async function updateTeamMember(memberId: string, updates: TeamMemberUpdate): Promise<TeamMember> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Get old value for audit log
+  const { data: oldMember, error: fetchError } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('id', memberId)
+    .single();
+
+  if (fetchError || !oldMember) {
+    throw new Error('Team member not found');
+  }
+
+  const typedOldMember = oldMember as TeamMember;
+
+  // Update team member
   const { data, error } = await supabase
     .from('team_members')
     // @ts-expect-error - Supabase type inference issue with Database type
@@ -142,13 +185,57 @@ export async function updateTeamMember(memberId: string, updates: TeamMemberUpda
     throw new Error(error.message);
   }
 
-  return data as TeamMember;
+  const updatedMember = data as TeamMember;
+
+  // Create audit log for role changes
+  if (updates.role && updates.role !== typedOldMember.role) {
+    try {
+      await createAuditLog({
+        organization_id: typedOldMember.organization_id,
+        user_id: user.id,
+        action_type: 'team_member_role_changed',
+        entity_type: 'team_member',
+        entity_id: memberId,
+        old_value: { role: typedOldMember.role },
+        new_value: { role: updates.role },
+        metadata: {
+          email: typedOldMember.email,
+          previous_role: typedOldMember.role,
+          new_role: updates.role,
+        },
+      });
+    } catch (auditError) {
+      // Log error but don't fail the operation
+      console.error('Failed to create audit log:', auditError);
+    }
+  }
+
+  return updatedMember;
 }
 
 /**
  * Remove team member
  */
 export async function removeTeamMember(memberId: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Get member info before deletion for audit log
+  const { data: member, error: fetchError } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('id', memberId)
+    .single();
+
+  if (fetchError || !member) {
+    throw new Error('Team member not found');
+  }
+
+  const typedMember = member as TeamMember;
+
+  // Delete team member
   const { error } = await supabase
     .from('team_members')
     .delete()
@@ -156,6 +243,26 @@ export async function removeTeamMember(memberId: string) {
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  // Create audit log
+  try {
+    await createAuditLog({
+      organization_id: typedMember.organization_id,
+      user_id: user.id,
+      action_type: 'team_member_removed',
+      entity_type: 'team_member',
+      entity_id: memberId,
+      old_value: typedMember,
+      new_value: null,
+      metadata: {
+        email: typedMember.email,
+        role: typedMember.role,
+      },
+    });
+  } catch (auditError) {
+    // Log error but don't fail the operation
+    console.error('Failed to create audit log:', auditError);
   }
 }
 
@@ -216,6 +323,15 @@ export async function updateSubscription(updates: SubscriptionUpdate): Promise<S
     throw new Error('User not authenticated');
   }
 
+  // Get old subscription for audit log
+  const { data: oldSubscription } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  const typedOldSubscription = oldSubscription as Subscription | null;
+
   const { data, error } = await supabase
     .from('subscriptions')
     // @ts-expect-error - Supabase type inference issue with Database type
@@ -228,7 +344,173 @@ export async function updateSubscription(updates: SubscriptionUpdate): Promise<S
     throw new Error(error.message);
   }
 
-  return data as Subscription;
+  const updatedSubscription = data as Subscription;
+
+  // Create audit log for significant changes
+  if (typedOldSubscription && (updates.plan_id || updates.status || updates.billing_cycle)) {
+    try {
+      await createAuditLog({
+        organization_id: user.id,
+        user_id: user.id,
+        action_type: 'subscription_changed',
+        entity_type: 'subscription',
+        entity_id: updatedSubscription.id,
+        old_value: {
+          plan_id: typedOldSubscription.plan_id,
+          status: typedOldSubscription.status,
+          billing_cycle: typedOldSubscription.billing_cycle,
+        },
+        new_value: {
+          plan_id: updatedSubscription.plan_id,
+          status: updatedSubscription.status,
+          billing_cycle: updatedSubscription.billing_cycle,
+        },
+        metadata: {
+          plan_name: updatedSubscription.plan_name,
+        },
+      });
+    } catch (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+  }
+
+  return updatedSubscription;
+}
+
+/**
+ * Update seat count (for billing)
+ */
+export async function updateSeats(seatCount: number): Promise<Subscription> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Get current subscription
+  const { data: subscription, error: fetchError } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (fetchError || !subscription) {
+    throw new Error('Subscription not found');
+  }
+
+  const typedSubscription = subscription as Subscription;
+
+  const oldSeatCount = (typedSubscription.usage_metadata as any)?.seat_count || 0;
+
+  // Update subscription with new seat count
+  const updatedMetadata = {
+    ...typedSubscription.usage_metadata,
+    seat_count: seatCount,
+  };
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    // @ts-expect-error - Supabase type inference issue with Database type
+    .update({ usage_metadata: updatedMetadata })
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const updatedSubscription = data as Subscription;
+
+  // Create audit log
+  const actionType = seatCount > oldSeatCount ? 'seat_added' : 'seat_removed';
+  try {
+    await createAuditLog({
+      organization_id: user.id,
+      user_id: user.id,
+      action_type: actionType,
+      entity_type: 'billing',
+      entity_id: typedSubscription.id,
+      old_value: { seat_count: oldSeatCount },
+      new_value: { seat_count: seatCount },
+      metadata: {
+        seats_added: seatCount - oldSeatCount,
+        total_seats: seatCount,
+      },
+    });
+  } catch (auditError) {
+    console.error('Failed to create audit log:', auditError);
+  }
+
+  return updatedSubscription;
+}
+
+/**
+ * Get audit logs for the organization
+ */
+export async function getAuditLogs(filters?: {
+  action_type?: string;
+  entity_type?: string;
+  limit?: number;
+}): Promise<AuditLog[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  let query = supabase
+    .from('audit_logs')
+    .select('*')
+    .eq('organization_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (filters?.action_type) {
+    query = query.eq('action_type', filters.action_type);
+  }
+
+  if (filters?.entity_type) {
+    query = query.eq('entity_type', filters.entity_type);
+  }
+
+  if (filters?.limit) {
+    query = query.limit(filters.limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []) as AuditLog[];
+}
+
+/**
+ * Create audit log (internal helper)
+ */
+async function createAuditLog(log: AuditLogInsert): Promise<AuditLog> {
+  // Get user agent and IP from metadata if available
+  const metadata = log.metadata || {};
+  
+  const auditLog: AuditLogInsert = {
+    ...log,
+    metadata: {
+      ...metadata,
+      timestamp: new Date().toISOString(),
+    },
+  };
+
+  const { data, error } = await supabase
+    .from('audit_logs')
+    // @ts-expect-error - Supabase type inference issue with Database type
+    .insert(auditLog)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as AuditLog;
 }
 
 /**

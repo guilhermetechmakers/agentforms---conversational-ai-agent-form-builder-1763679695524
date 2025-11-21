@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121030745_create_audit_logs_table",
+  "created_at": "2025-11-21T03:07:45Z",
+  "description": "Create audit logs table for tracking role changes, billing updates, and other critical actions for compliance",
+  "tables_created": ["audit_logs"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS audit_logs CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}

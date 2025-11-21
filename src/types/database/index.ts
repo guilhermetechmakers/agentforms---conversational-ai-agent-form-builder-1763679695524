@@ -27,6 +27,7 @@ export * from './schema-field';
 export * from './validation-rule';
 export * from './schema-draft';
 export * from './knowledge-snippet';
+export * from './audit-log';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -171,6 +172,11 @@ export interface Database {
         Row: import('./knowledge-snippet').KnowledgeSnippet;
         Insert: import('./knowledge-snippet').KnowledgeSnippetInsert;
         Update: import('./knowledge-snippet').KnowledgeSnippetUpdate;
+      };
+      audit_logs: {
+        Row: import('./audit-log').AuditLog;
+        Insert: import('./audit-log').AuditLogInsert;
+        Update: import('./audit-log').AuditLogUpdate;
       };
     };
   };
