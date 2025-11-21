@@ -22,6 +22,10 @@ export * from './help-center-interaction';
 export * from './error-log';
 export * from './support-ticket';
 export * from './sso-configuration';
+export * from './agent-schema';
+export * from './schema-field';
+export * from './validation-rule';
+export * from './schema-draft';
 
 // Main Database type for Supabase client
 export interface Database {
@@ -141,6 +145,26 @@ export interface Database {
         Row: import('./sso-configuration').SSOConfiguration;
         Insert: import('./sso-configuration').SSOConfigurationInsert;
         Update: import('./sso-configuration').SSOConfigurationUpdate;
+      };
+      agent_schemas: {
+        Row: import('./agent-schema').AgentSchema;
+        Insert: import('./agent-schema').AgentSchemaInsert;
+        Update: import('./agent-schema').AgentSchemaUpdate;
+      };
+      schema_fields: {
+        Row: import('./schema-field').SchemaField;
+        Insert: import('./schema-field').SchemaFieldInsert;
+        Update: import('./schema-field').SchemaFieldUpdate;
+      };
+      validation_rules: {
+        Row: import('./validation-rule').ValidationRule;
+        Insert: import('./validation-rule').ValidationRuleInsert;
+        Update: import('./validation-rule').ValidationRuleUpdate;
+      };
+      schema_drafts: {
+        Row: import('./schema-draft').SchemaDraft;
+        Insert: import('./schema-draft').SchemaDraftInsert;
+        Update: import('./schema-draft').SchemaDraftUpdate;
       };
     };
   };

@@ -9,6 +9,7 @@ import EmailVerification from "@/pages/EmailVerification";
 import PasswordReset from "@/pages/PasswordReset";
 import Dashboard from "@/pages/Dashboard";
 import AgentBuilder from "@/pages/AgentBuilder";
+import SchemaBuilder from "@/components/schema-builder/SchemaBuilder";
 import PublicAgentSession from "@/pages/PublicAgentSession";
 import SessionViewer from "@/pages/SessionViewer";
 import AgentSessionsList from "@/pages/AgentSessionsList";
@@ -74,6 +75,14 @@ export default function App() {
             element={
               <ProtectedRoute requireEmailVerification>
                 <AgentBuilder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/:agentId/schema"
+            element={
+              <ProtectedRoute requireEmailVerification>
+                <SchemaBuilder />
               </ProtectedRoute>
             }
           />

@@ -1,0 +1,12 @@
+{
+  "migration_name": "20251121022109_create_schema_builder_tables",
+  "created_at": "2025-11-21T02:21:09Z",
+  "description": "Create tables for advanced schema builder features including versioning, drafts, validation rules, and conflict detection",
+  "tables_created": ["agent_schemas", "schema_fields", "validation_rules", "schema_drafts"],
+  "tables_modified": [],
+  "tables_deleted": [],
+  "breaking_changes": false,
+  "rollback_sql": "DROP TABLE IF EXISTS schema_drafts CASCADE; DROP TABLE IF EXISTS validation_rules CASCADE; DROP TABLE IF EXISTS schema_fields CASCADE; DROP TABLE IF EXISTS agent_schemas CASCADE; DROP FUNCTION IF EXISTS detect_schema_conflicts() CASCADE;",
+  "estimated_rows": 0,
+  "requires_downtime": false
+}
