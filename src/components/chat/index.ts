@@ -7,3 +7,4 @@ export { QuickReplyChips } from './QuickReplyChips';
 export { ProgressIndicator } from './ProgressIndicator';
 export { PrivacyNotice } from './PrivacyNotice';
 export { EndSessionDialog } from './EndSessionDialog';
+export { EmailOTPGate } from './EmailOTPGate';

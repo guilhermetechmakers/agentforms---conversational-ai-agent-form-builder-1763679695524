@@ -140,6 +140,23 @@ export async function getExtractedFields(sessionId: string): Promise<ExtractedFi
 }
 
 /**
+ * Create an extracted field
+ */
+export async function createExtractedField(field: any): Promise<ExtractedFieldRow> {
+  const { data, error } = await supabase
+    .from('extracted_fields')
+    .insert(field)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create extracted field: ${error.message}`);
+  }
+
+  return data as ExtractedFieldRow;
+}
+
+/**
  * Subscribe to real-time messages for a session
  */
 export function subscribeToMessages(

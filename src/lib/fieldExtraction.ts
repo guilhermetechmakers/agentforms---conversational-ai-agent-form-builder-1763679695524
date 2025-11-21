@@ -1,11 +1,36 @@
 import type { AgentField, AgentSchema } from '@/types/agent';
 import type { MessageRow } from '@/types/database/session';
+import { extractFieldsWithLLM, validateFieldValue } from '@/api/llm';
 
 /**
- * Extract field values from messages
- * This is a simplified version - in production, you'd use an LLM for extraction
+ * Extract field values from messages using LLM
  */
-export function extractFieldsFromMessages(
+export async function extractFieldsFromMessages(
+  messages: MessageRow[],
+  schema: AgentSchema
+): Promise<Record<string, string>> {
+  // Use LLM for extraction if available, otherwise fall back to pattern matching
+  try {
+    const extracted = await extractFieldsWithLLM(messages, schema);
+    const result: Record<string, string> = {};
+    
+    Object.values(extracted).forEach((field) => {
+      if (field.confidence >= 70) {
+        result[field.fieldId] = field.value;
+      }
+    });
+    
+    return result;
+  } catch (error) {
+    console.warn('LLM extraction failed, using fallback:', error);
+    return extractFieldsFromMessagesFallback(messages, schema);
+  }
+}
+
+/**
+ * Fallback extraction using pattern matching
+ */
+function extractFieldsFromMessagesFallback(
   messages: MessageRow[],
   schema: AgentSchema
 ): Record<string, string> {
@@ -13,7 +38,6 @@ export function extractFieldsFromMessages(
   const fields = schema.fields || [];
 
   // Simple extraction based on message patterns
-  // In production, this would use an LLM to extract structured data
   for (const message of messages) {
     if (message.role !== 'visitor') continue;
 
@@ -25,14 +49,14 @@ export function extractFieldsFromMessages(
 
       const label = field.label.toLowerCase();
 
-      // Simple pattern matching (very basic - production would use LLM)
+      // Simple pattern matching
       if (field.type === 'email') {
         const emailMatch = message.content.match(/[\w.-]+@[\w.-]+\.\w+/);
         if (emailMatch) {
           extracted[field.id] = emailMatch[0];
         }
       } else if (field.type === 'number') {
-        const numberMatch = message.content.match(/\d+/);
+        const numberMatch = message.content.match(/\d+(\.\d+)?/);
         if (numberMatch) {
           extracted[field.id] = numberMatch[0];
         }
@@ -44,9 +68,13 @@ export function extractFieldsFromMessages(
         if (matchedOption) {
           extracted[field.id] = matchedOption;
         }
-      } else if (field.type === 'text' || field.type === 'date') {
+      } else if (field.type === 'date') {
+        const dateMatch = message.content.match(/\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}\/\d{4}/);
+        if (dateMatch) {
+          extracted[field.id] = dateMatch[0];
+        }
+      } else if (field.type === 'text') {
         // For text fields, use the message content if it seems relevant
-        // This is very simplified - production would use LLM
         if (content.includes(label) || label.includes('name') || label.includes('message')) {
           extracted[field.id] = message.content;
         }
@@ -66,7 +94,19 @@ export function calculateCompletionRate(
 ): { completed: number; total: number; rate: number } {
   const requiredFields = schema.fields?.filter((f) => f.required) || [];
   const total = requiredFields.length;
-  const completed = requiredFields.filter((f) => extractedFields[f.id]).length;
+  
+  // Validate extracted fields
+  let completed = 0;
+  for (const field of requiredFields) {
+    const value = extractedFields[field.id];
+    if (value) {
+      const validation = validateFieldValue(value, field);
+      if (validation.isValid) {
+        completed++;
+      }
+    }
+  }
+  
   const rate = total > 0 ? (completed / total) * 100 : 0;
 
   return { completed, total, rate };

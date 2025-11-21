@@ -7,15 +7,20 @@ import { ChatInput } from '@/components/chat/ChatInput';
 import { ProgressIndicator } from '@/components/chat/ProgressIndicator';
 import { PrivacyNotice } from '@/components/chat/PrivacyNotice';
 import { EndSessionDialog } from '@/components/chat/EndSessionDialog';
+import { EmailOTPGate } from '@/components/chat/EmailOTPGate';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePublicAgent, useCreateSession, useUpdateSession, useSession } from '@/hooks/useSessions';
 import { useMessages, useCreateMessage, useMessageSubscription } from '@/hooks/useMessages';
-import { subscribeToSession } from '@/api/sessions';
+import { useStreamingMessage } from '@/hooks/useStreamingMessage';
+import { subscribeToSession, createExtractedField } from '@/api/sessions';
+import { generateAgentResponse, validateFieldValue } from '@/api/llm';
 import { generateSessionId } from '@/lib/supabase';
 import { extractFieldsFromMessages, calculateCompletionRate, getNextRequiredField } from '@/lib/fieldExtraction';
+import { checkRateLimit, detectAbusePattern } from '@/lib/rateLimit';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import type { AgentField } from '@/types/agent';
+import type { MessageRow } from '@/types/database/session';
 
 export default function PublicAgentSession() {
   const { slug } = useParams<{ slug: string }>();
@@ -34,8 +39,10 @@ export default function PublicAgentSession() {
   const [isTyping, setIsTyping] = useState(false);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const extractedFieldsRef = useRef<Record<string, string>>({});
   const sessionCreatedRef = useRef(false);
+  const processingRef = useRef(false);
   
   // Session queries
   const { data: session } = useSession(sessionId);
@@ -44,8 +51,24 @@ export default function PublicAgentSession() {
   const updateSessionMutation = useUpdateSession();
   const createMessageMutation = useCreateMessage();
   
+  // Streaming message hook
+  const { isStreaming, streamingContent, startStreaming } = useStreamingMessage({
+    sessionId: sessionId || '',
+    onComplete: () => {
+      setIsTyping(false);
+    },
+    onError: (error) => {
+      setIsTyping(false);
+      toast.error('Failed to get response. Please try again.');
+      console.error('Streaming error:', error);
+    },
+  });
+  
   // Subscribe to real-time updates
   useMessageSubscription(sessionId);
+  
+  // Check if email OTP is required
+  const requiresEmailOTP = agent?.publish?.emailOTPEnabled && !emailVerified;
   
   // Subscribe to session updates
   useEffect(() => {
@@ -60,9 +83,9 @@ export default function PublicAgentSession() {
     };
   }, [sessionId]);
   
-  // Create session on mount
+  // Create session on mount (after email verification if required)
   useEffect(() => {
-    if (!agent || sessionId || sessionCreatedRef.current) return;
+    if (!agent || sessionId || sessionCreatedRef.current || requiresEmailOTP) return;
     
     const createNewSession = async () => {
       sessionCreatedRef.current = true;
@@ -98,6 +121,22 @@ export default function PublicAgentSession() {
             content: agent.visuals.welcomeMessage,
             metadata: { type: 'welcome' },
           });
+        } else {
+          // Generate initial greeting using LLM
+          const context = {
+            agent,
+            messages: [],
+            extractedFields: {},
+            sessionId: newSession.id,
+          };
+          
+          const response = await generateAgentResponse(context, '');
+          await createMessageMutation.mutateAsync({
+            session_id: newSession.id,
+            role: 'agent',
+            content: response.content,
+            metadata: { type: 'greeting' },
+          });
         }
       } catch (error) {
         console.error('Failed to create session:', error);
@@ -107,7 +146,79 @@ export default function PublicAgentSession() {
     };
     
     createNewSession();
-  }, [agent, sessionId, visitorId, createSessionMutation, createMessageMutation]);
+  }, [agent, sessionId, visitorId, createSessionMutation, createMessageMutation, requiresEmailOTP]);
+  
+  // Extract fields and calculate progress
+  useEffect(() => {
+    if (!agent || !messages.length || !sessionId) return;
+    
+    let isMounted = true;
+    
+    const extractAndUpdate = async () => {
+      try {
+        // Extract fields using LLM
+        const extracted = await extractFieldsFromMessages(messages, agent.schema);
+        
+        if (!isMounted) return;
+        
+        extractedFieldsRef.current = extracted;
+        
+        // Calculate completion
+        const completion = calculateCompletionRate(extracted, agent.schema);
+        
+        // Update session if progress changed
+        if (session) {
+          const currentCompleted = session.completed_fields_count || 0;
+          if (completion.completed !== currentCompleted) {
+            await updateSessionMutation.mutateAsync({
+              sessionId,
+              updates: {
+                completed_fields_count: completion.completed,
+                completion_rate: completion.rate,
+              },
+            });
+          }
+        }
+        
+        // Save extracted fields to database
+        for (const [fieldId, value] of Object.entries(extracted)) {
+          const field = agent.schema.fields.find((f: AgentField) => f.id === fieldId);
+          if (field) {
+            const validation = validateFieldValue(value, field);
+            const lastVisitorMessage = [...messages]
+              .reverse()
+              .find((m) => m.role === 'visitor');
+            
+            try {
+              await createExtractedField({
+                session_id: sessionId,
+                agent_id: agent.id,
+                field_id: fieldId,
+                field_label: field.label,
+                field_type: field.type,
+                value: value,
+                raw_value: lastVisitorMessage?.content || value,
+                is_valid: validation.isValid,
+                validation_errors: validation.errors.length > 0 ? { errors: validation.errors } : null,
+                confidence_score: 85, // Would come from LLM in production
+                source_message_id: lastVisitorMessage?.id || null,
+              });
+            } catch (error) {
+              console.warn('Failed to save extracted field:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to extract fields:', error);
+      }
+    };
+    
+    extractAndUpdate();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [messages, agent, sessionId, session, updateSessionMutation]);
   
   // Calculate progress from extracted fields
   const progress = useMemo(() => {
@@ -121,29 +232,9 @@ export default function PublicAgentSession() {
       return { completed: 0, total: 0 };
     }
     
-    // Extract fields from messages
-    const extracted = extractFieldsFromMessages(messages, agent.schema);
-    extractedFieldsRef.current = extracted;
-    
-    // Calculate completion
-    const completion = calculateCompletionRate(extracted, agent.schema);
-    
-    // Update session if progress changed
-    if (sessionId && session) {
-      const currentCompleted = session.completed_fields_count || 0;
-      if (completion.completed !== currentCompleted) {
-        updateSessionMutation.mutate({
-          sessionId,
-          updates: {
-            completed_fields_count: completion.completed,
-            completion_rate: completion.rate,
-          },
-        });
-      }
-    }
-    
+    const completion = calculateCompletionRate(extractedFieldsRef.current, agent.schema);
     return { completed: completion.completed, total: completion.total };
-  }, [session, agent, messages, sessionId, updateSessionMutation]);
+  }, [session, agent, messages]);
   
   // Get quick replies for current field
   const quickReplies = useMemo(() => {
@@ -161,67 +252,78 @@ export default function PublicAgentSession() {
   
   // Handle sending a message
   const handleSendMessage = useCallback(async (content: string) => {
-    if (!sessionId || !agent) return;
+    if (!sessionId || !agent || processingRef.current) return;
+    
+    // Check rate limiting
+    const rateLimit = checkRateLimit(`session_${sessionId}`, {
+      max: 30,
+      window: 60 * 1000, // 30 messages per minute
+    });
+    
+    if (!rateLimit.allowed) {
+      setRateLimitError(
+        `Rate limit exceeded. Please wait ${rateLimit.retryAfter} seconds before sending another message.`
+      );
+      return;
+    }
+    
+    // Check for abuse patterns
+    const abuseCheck = detectAbusePattern(
+      messages.map((m) => ({
+        content: m.content,
+        createdAt: m.created_at,
+      })),
+      20
+    );
+    
+    if (abuseCheck.isAbuse) {
+      setRateLimitError(abuseCheck.reason || 'Unusual activity detected. Please slow down.');
+      return;
+    }
     
     setRateLimitError(null);
     setIsTyping(true);
+    processingRef.current = true;
     
     try {
       // Create visitor message
-      await createMessageMutation.mutateAsync({
+      const visitorMessage = await createMessageMutation.mutateAsync({
         session_id: sessionId,
         role: 'visitor',
         content,
         metadata: {},
       });
       
-      // Simulate agent response (in real implementation, this would call an LLM API)
-      // For now, we'll create a simple response based on the next required field
-      setTimeout(async () => {
-        try {
-          if (!agent) return;
-          
-          // Get next required field
-          const nextField = getNextRequiredField(extractedFieldsRef.current, agent.schema);
-          
-          let agentResponse: string;
-          
-          if (nextField) {
-            // Ask for the next required field
-            agentResponse = nextField.placeholder || `Please provide your ${nextField.label.toLowerCase()}.`;
-            if (nextField.helpText) {
-              agentResponse += ` ${nextField.helpText}`;
-            }
-          } else {
-            // All required fields completed
-            agentResponse = 'Thank you! All required information has been collected. Is there anything else you\'d like to share?';
-          }
-          
-          await createMessageMutation.mutateAsync({
-            session_id: sessionId,
-            role: 'agent',
-            content: agentResponse,
-            metadata: { type: 'question', fieldId: nextField?.id },
-          });
-          
-        } catch (error) {
-          console.error('Failed to create agent message:', error);
-          toast.error('Failed to get response. Please try again.');
-        } finally {
-          setIsTyping(false);
-        }
-      }, 1000);
+      // Build conversation context
+      const context = {
+        agent,
+        messages: [...messages, visitorMessage],
+        extractedFields: extractedFieldsRef.current,
+        sessionId,
+      };
+      
+      // Generate agent response using LLM with streaming
+      startStreaming(context, content);
+      
+      // Also create the final message once streaming completes
+      // This is handled by the streaming hook
       
     } catch (error: any) {
       setIsTyping(false);
+      processingRef.current = false;
       
       if (error.message?.includes('rate limit') || error.message?.includes('429')) {
         setRateLimitError('Rate limit exceeded. Please wait a moment before sending another message.');
       } else {
         toast.error('Failed to send message. Please try again.');
       }
+    } finally {
+      // Reset processing flag after a delay to allow streaming to complete
+      setTimeout(() => {
+        processingRef.current = false;
+      }, 2000);
     }
-  }, [sessionId, agent, createMessageMutation]);
+  }, [sessionId, agent, messages, createMessageMutation, startStreaming]);
   
   // Handle file upload
   const handleFileUpload = useCallback(async (_file: File) => {
@@ -284,6 +386,13 @@ export default function PublicAgentSession() {
     toast.success('Transcript downloaded');
   }, [sessionId, messages, agent]);
   
+  // Handle email verification
+  const handleEmailVerified = useCallback(() => {
+    setEmailVerified(true);
+    // Reset session creation flag to allow session creation
+    sessionCreatedRef.current = false;
+  }, []);
+  
   // Loading state
   if (isLoadingAgent || createSessionMutation.isPending) {
     return (
@@ -316,6 +425,36 @@ export default function PublicAgentSession() {
   const agentName = agent.persona?.name || agent.name;
   const avatarUrl = agent.visuals?.avatarUrl;
   
+  // Show email OTP gate if required
+  if (requiresEmailOTP) {
+    return (
+      <EmailOTPGate
+        open={true}
+        onVerified={handleEmailVerified}
+        agentName={agentName}
+      />
+    );
+  }
+  
+  // Combine messages with streaming content
+  const displayMessages = useMemo(() => {
+    if (isStreaming && streamingContent) {
+      // Add temporary streaming message
+      const streamingMessage: MessageRow = {
+        id: `streaming-${Date.now()}`,
+        session_id: sessionId || '',
+        role: 'agent',
+        content: streamingContent,
+        metadata: { streaming: true },
+        validation_state: null,
+        validation_errors: null,
+        created_at: new Date().toISOString(),
+      };
+      return [...messages, streamingMessage];
+    }
+    return messages;
+  }, [messages, isStreaming, streamingContent, sessionId]);
+  
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <ChatHeader
@@ -340,8 +479,8 @@ export default function PublicAgentSession() {
       )}
       
       <ChatTranscript
-        messages={messages}
-        isTyping={isTyping}
+        messages={displayMessages}
+        isTyping={isTyping && !isStreaming}
         agentName={agentName}
         avatarUrl={avatarUrl}
         primaryColor={primaryColor}
@@ -362,7 +501,7 @@ export default function PublicAgentSession() {
       <ChatInput
         onSend={handleSendMessage}
         onFileUpload={handleFileUpload}
-        disabled={!sessionId || isTyping || createMessageMutation.isPending}
+        disabled={!sessionId || isTyping || createMessageMutation.isPending || processingRef.current}
         placeholder="Type your message..."
         quickReplies={quickReplies}
         primaryColor={primaryColor}
